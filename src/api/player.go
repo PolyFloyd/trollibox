@@ -237,7 +237,7 @@ func (api *playerAPI) getVolume(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	json.NewEncoder(res).Encode(map[string]interface{}{
-		"volume": volume,
+		"volume": float32(volume) / 100.0,
 	})
 }
 
@@ -252,7 +252,7 @@ func (api *playerAPI) setVolume(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := pl.SetVolume(data.Volume); err != nil {
+	if err := pl.SetVolume(int(data.Volume * 100)); err != nil {
 		WriteError(req, res, err)
 		return
 	}
