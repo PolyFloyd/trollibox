@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/antage/eventsource"
 	"github.com/go-chi/chi"
@@ -41,8 +42,8 @@ func InitRouter(r chi.Router, players player.List, netServer *netmedia.Server, f
 		r.Post("/next", api.next) // Deprecated
 		r.Get("/time", api.getTime)
 		r.Post("/time", api.setTime)
-		r.Get("/playstate", api.getPlaystate)
-		r.Post("/playstate", api.setPlaystate)
+		r.Get("/playstate", api.getPlayState)
+		r.Post("/playstate", api.setPlayState)
 		r.Get("/volume", api.getVolume)
 		r.Post("/volume", api.setVolume)
 		r.Get("/list/", api.listStoredPlaylists)
@@ -113,18 +114,48 @@ func htEvents(emitter *util.Emitter) http.Handler {
 
 			// TODO: All these events should not all be combined in here.
 			var eventStr string
+			var eventMsg []byte
+			var err error
 			switch t := event.(type) {
-			case player.Event:
-				eventStr = string(t)
+			case player.PlaylistEvent:
+				eventStr = "playlist"
+				eventMsg, err = json.Marshal(map[string]interface{}{
+					"index": t.Index,
+				})
+			case player.PlayStateEvent:
+				eventStr = "playstate"
+				eventMsg, err = json.Marshal(map[string]interface{}{
+					"state": t.State,
+				})
+			case player.TimeEvent:
+				eventStr = "time"
+				eventMsg, err = json.Marshal(map[string]interface{}{
+					"time": int(t.Time / time.Second),
+				})
+			case player.VolumeEvent:
+				eventStr = "volume"
+				eventMsg, err = json.Marshal(map[string]interface{}{
+					"volume": float32(t.Volume) / 100.0,
+				})
+			case player.ListEvent:
+				eventStr = "list"
+			case player.AvailabilityEvent:
+				eventStr = "availability"
+				eventMsg, err = json.Marshal(map[string]interface{}{
+					"available": t.Available,
+				})
 			case library.UpdateEvent:
-				eventStr = "tracks"
+				eventStr = "library:tracks"
 			case filter.UpdateEvent:
-				eventStr = "update"
+				eventStr = "filter:update"
 			default:
 				continue
 			}
+			if err != nil {
+				log.Error(err)
+			}
 
-			events.SendEventMessage("{}", eventStr, fmt.Sprintf("%d", id))
+			events.SendEventMessage(string(eventMsg), eventStr, fmt.Sprintf("%d", id))
 		}
 	}()
 	return events

@@ -199,7 +199,7 @@ func (api *playerAPI) getTime(res http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func (api *playerAPI) getPlaystate(res http.ResponseWriter, req *http.Request) {
+func (api *playerAPI) getPlayState(res http.ResponseWriter, req *http.Request) {
 	pl := req.Context().Value(playerContextKey).(player.Player)
 	playstate, err := pl.State()
 	if err != nil {
@@ -211,7 +211,7 @@ func (api *playerAPI) getPlaystate(res http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func (api *playerAPI) setPlaystate(res http.ResponseWriter, req *http.Request) {
+func (api *playerAPI) setPlayState(res http.ResponseWriter, req *http.Request) {
 	pl := req.Context().Value(playerContextKey).(player.Player)
 	var data struct {
 		State string `json:"playstate"`
@@ -476,7 +476,7 @@ func removeRawTrack(pl player.Player, track library.Track, rawServer *raw.Server
 	defer pl.Events().Unlisten(events)
 outer:
 	for event := range events {
-		if event != player.PlaylistEvent {
+		if _, ok := event.(player.PlaylistEvent); ok {
 			continue
 		}
 		tracks, err := pl.Playlist().Tracks()
