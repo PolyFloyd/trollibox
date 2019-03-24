@@ -54,7 +54,7 @@ func InitRouter(r chi.Router, players player.List, netServer *netmedia.Server, f
 		r.Mount("/events", api.events())
 	})
 
-	r.Route("/filters/", func(r chi.Router) {
+	r.Route("/filters", func(r chi.Router) {
 		api := filterAPI{db: filterdb}
 		r.Get("/", api.list)
 		r.Route("/{name}", func(r chi.Router) {
@@ -148,6 +148,9 @@ func htEvents(emitter *util.Emitter) http.Handler {
 				eventStr = "library:tracks"
 			case filter.UpdateEvent:
 				eventStr = "filter:update"
+				eventMsg, err = json.Marshal(map[string]interface{}{
+					"filter": t.Filter,
+				})
 			default:
 				continue
 			}
